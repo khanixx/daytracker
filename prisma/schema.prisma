@@ -10,17 +10,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String        @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String        @unique
   password      String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime      @default(now())
   habits        Habit[]
   tasks         Task[]
   habitLogs     HabitLog[]
   taskLogs      TaskLog[]
   pomodoroLogs  PomodoroLog[]
   settings      UserSettings?
+  notes         Note[]
 }
 
 model UserSettings {
@@ -51,7 +52,7 @@ model HabitLog {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      String   // YYYY-MM-DD
   done      Boolean  @default(true)
-  
+
   @@unique([habitId, date])
 }
 
@@ -60,10 +61,10 @@ model Task {
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
-  category  String    @default("personal") // work | health | personal
-  priority  String    @default("med")      // high | med | low
+  category  String    @default("personal")
+  priority  String    @default("med")
   done      Boolean   @default(false)
-  date      String    // YYYY-MM-DD — задача принадлежит дню
+  date      String
   createdAt DateTime  @default(now())
   logs      TaskLog[]
 }
@@ -84,8 +85,19 @@ model PomodoroLog {
   id      String @id @default(cuid())
   userId  String
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date    String // YYYY-MM-DD
+  date    String
   count   Int    @default(0)
 
   @@unique([userId, date])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("Без названия")
+  content   String   @default("")
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
