@@ -1,0 +1,650 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f8f7f4;--card:#fff;--border:rgba(0,0,0,0.1);--text:#1a1a1a;--muted:#666;--accent:#4f46e5;--accent2:#10b981;--accent3:#f59e0b;--danger:#ef4444;--radius:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#111;--card:#1c1c1e;--border:rgba(255,255,255,0.1);--text:#f5f5f5;--muted:#999}}
+body{font-family:var(--font-sans,'Inter',sans-serif);background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:900px;margin:0 auto;padding:1.5rem 1rem 3rem}
+.nav{display:flex;gap:6px;background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:6px;margin-bottom:1.5rem;overflow-x:auto}
+.nav-btn{flex:1;min-width:80px;padding:8px 10px;border:none;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s}
+.nav-btn i{font-size:18px}
+.nav-btn.active{background:var(--accent);color:#fff}
+.tab{display:none}.tab.active{display:block}
+h2{font-size:18px;font-weight:500;margin-bottom:1rem;color:var(--text)}
+h3{font-size:15px;font-weight:500;color:var(--text);margin-bottom:.5rem}
+
+/* Cards */
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:1rem}
+.metric{background:var(--card);border:0.5px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+.metric-val{font-size:26px;font-weight:500;color:var(--accent)}
+.metric-lbl{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* Habits */
+.habit-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.habit-row:last-child{border-bottom:none}
+.habit-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.habit-check.done{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.habit-name{flex:1;font-size:14px}
+.habit-streak{font-size:12px;color:var(--muted)}
+.week-dots{display:flex;gap:4px;margin-left:auto}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.dot.done{background:var(--accent2)}
+.add-row{display:flex;gap:8px;margin-top:.75rem}
+.add-row input{flex:1;padding:8px 12px;border:0.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px}
+.btn{padding:8px 16px;border:0.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.btn:hover{background:var(--bg)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{opacity:.9}
+.btn-danger{color:var(--danger);border-color:transparent}
+
+/* Tasks */
+.task-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.task-row:last-child{border-bottom:none}
+.task-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.task-check.done{background:var(--accent);border-color:var(--accent);color:#fff}
+.task-name{flex:1;font-size:14px}
+.task-name.done{text-decoration:line-through;color:var(--muted)}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--bg);color:var(--muted);border:0.5px solid var(--border)}
+.tag.work{color:#4f46e5;background:#eef2ff;border-color:#c7d2fe}
+.tag.health{color:#10b981;background:#ecfdf5;border-color:#a7f3d0}
+.tag.personal{color:#f59e0b;background:#fffbeb;border-color:#fde68a}
+.priority-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.p-high{background:var(--danger)}.p-med{background:var(--accent3)}.p-low{background:var(--accent2)}
+
+/* Pomodoro */
+.pomo-center{text-align:center;padding:1.5rem 0}
+.pomo-ring{position:relative;width:200px;height:200px;margin:0 auto 1.5rem}
+.pomo-ring svg{transform:rotate(-90deg)}
+.pomo-ring circle{fill:none;stroke-width:10}
+.ring-bg{stroke:var(--border)}
+.ring-fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .5s linear}
+.pomo-time{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:36px;font-weight:500;letter-spacing:2px}
+.pomo-label{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--muted)}
+.pomo-controls{display:flex;gap:10px;justify-content:center;margin-bottom:1.5rem}
+.pomo-controls .btn{padding:10px 24px;font-size:14px}
+.pomo-sessions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.sess-dot{width:12px;height:12px;border-radius:50%;background:var(--border);transition:background .3s}
+.sess-dot.done{background:var(--accent)}
+.pomo-settings{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:1rem}
+.pomo-settings label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+.pomo-settings input{width:100%;padding:6px 10px;border:0.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px;text-align:center}
+.mode-tabs{display:flex;gap:6px;justify-content:center;margin-bottom:1rem}
+.mode-tab{padding:6px 16px;border-radius:20px;border:0.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:13px}
+.mode-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Calendar */
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-name{text-align:center;font-size:12px;color:var(--muted);padding:4px 0}
+.cal-day{min-height:64px;padding:6px;border-radius:8px;border:0.5px solid transparent;cursor:pointer;transition:all .1s;position:relative}
+.cal-day:hover{border-color:var(--border);background:var(--card)}
+.cal-day.today{border-color:var(--accent);background:rgba(79,70,229,.05)}
+.cal-day.other-month .day-num{color:var(--border)}
+.day-num{font-size:13px;font-weight:500;margin-bottom:4px}
+.day-events{display:flex;flex-direction:column;gap:2px}
+.day-dot{height:4px;border-radius:2px;font-size:0;background:var(--accent)}
+.day-dot.green{background:var(--accent2)}
+.day-dot.amber{background:var(--accent3)}
+.event-summary{font-size:10px;color:var(--muted);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Analytics */
+.chart-wrap{position:relative;width:100%;margin-bottom:1rem}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:12px;color:var(--muted)}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-sq{width:10px;height:10px;border-radius:2px}
+.range-btns{display:flex;gap:6px;margin-bottom:1rem}
+.range-btn{padding:5px 14px;border-radius:20px;border:0.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px}
+.range-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+
+<div class="app">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <div>
+      <p style="font-size:13px;color:var(--muted)" id="today-date"></p>
+      <h2 style="margin:0">Мой день</h2>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="metric" style="padding:.5rem 1rem;margin:0">
+        <div class="metric-val" style="font-size:18px" id="score-display">0%</div>
+        <div class="metric-lbl">успех дня</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav" role="tablist">
+    <button class="nav-btn active" onclick="showTab('habits')" aria-selected="true"><i class="ti ti-checkbox" aria-hidden="true"></i>Привычки</button>
+    <button class="nav-btn" onclick="showTab('tasks')" aria-selected="false"><i class="ti ti-list-check" aria-hidden="true"></i>Задачи</button>
+    <button class="nav-btn" onclick="showTab('pomodoro')" aria-selected="false"><i class="ti ti-clock" aria-hidden="true"></i>Помодоро</button>
+    <button class="nav-btn" onclick="showTab('calendar')" aria-selected="false"><i class="ti ti-calendar" aria-hidden="true"></i>Календарь</button>
+    <button class="nav-btn" onclick="showTab('analytics')" aria-selected="false"><i class="ti ti-chart-bar" aria-hidden="true"></i>Аналитика</button>
+  </nav>
+
+  <!-- HABITS TAB -->
+  <div id="tab-habits" class="tab active">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <h3 style="margin:0">Привычки сегодня</h3>
+        <span style="font-size:13px;color:var(--muted)" id="habits-progress">0/0</span>
+      </div>
+      <div id="habits-list"></div>
+      <div class="add-row">
+        <input id="new-habit" placeholder="Новая привычка..." onkeydown="if(event.key==='Enter')addHabit()">
+        <select id="habit-icon" style="padding:8px;border:0.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px">
+          <option value="🏃">🏃 Спорт</option><option value="📚">📚 Чтение</option><option value="💊">💊 Здоровье</option><option value="🧘">🧘 Медитация</option><option value="💧">💧 Вода</option><option value="😴">😴 Сон</option><option value="✏️">✏️ Учёба</option><option value="🌿">🌿 Другое</option>
+        </select>
+        <button class="btn btn-primary" onclick="addHabit()"><i class="ti ti-plus" aria-hidden="true"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS TAB -->
+  <div id="tab-tasks" class="tab">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <h3 style="margin:0">Задачи</h3>
+        <span style="font-size:13px;color:var(--muted)" id="tasks-progress">0/0</span>
+      </div>
+      <div id="tasks-list"></div>
+      <div class="add-row" style="flex-wrap:wrap;gap:8px">
+        <input id="new-task" placeholder="Новая задача..." style="min-width:180px" onkeydown="if(event.key==='Enter')addTask()">
+        <select id="task-cat" style="padding:8px;border:0.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px">
+          <option value="work">Работа</option><option value="health">Здоровье</option><option value="personal">Личное</option>
+        </select>
+        <select id="task-prio" style="padding:8px;border:0.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px">
+          <option value="high">🔴 Высокий</option><option value="med">🟡 Средний</option><option value="low">🟢 Низкий</option>
+        </select>
+        <button class="btn btn-primary" onclick="addTask()">Добавить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POMODORO TAB -->
+  <div id="tab-pomodoro" class="tab">
+    <div class="card pomo-center">
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="setMode('work',this)">Работа</button>
+        <button class="mode-tab" onclick="setMode('short',this)">Короткий отдых</button>
+        <button class="mode-tab" onclick="setMode('long',this)">Длинный отдых</button>
+      </div>
+      <div class="pomo-ring">
+        <svg viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Помодоро таймер">
+          <circle class="ring-bg" cx="100" cy="100" r="90" stroke-dasharray="565" stroke-dashoffset="0"/>
+          <circle class="ring-fg" id="pomo-ring" cx="100" cy="100" r="90" stroke-dasharray="565" stroke-dashoffset="0"/>
+        </svg>
+        <div class="pomo-time" id="pomo-time">25:00</div>
+        <div class="pomo-label" id="pomo-mode-label">Фокус</div>
+      </div>
+      <div class="pomo-controls">
+        <button class="btn" onclick="pomoPrev()"><i class="ti ti-player-skip-back" aria-label="Назад"></i></button>
+        <button class="btn btn-primary" id="pomo-btn" onclick="togglePomo()" style="min-width:100px"><i class="ti ti-player-play"></i> Старт</button>
+        <button class="btn" onclick="pomoReset()"><i class="ti ti-refresh" aria-label="Сбросить"></i></button>
+      </div>
+      <div class="pomo-sessions" id="pomo-sessions"></div>
+      <div style="margin-top:1rem;font-size:13px;color:var(--muted)">Сессий сегодня: <strong id="pomo-done-count">0</strong></div>
+      <div class="pomo-settings">
+        <div><label>Работа (мин)</label><input type="number" id="s-work" value="25" min="1" max="90" onchange="updateSettings()"></div>
+        <div><label>Короткий отдых</label><input type="number" id="s-short" value="5" min="1" max="30" onchange="updateSettings()"></div>
+        <div><label>Длинный отдых</label><input type="number" id="s-long" value="15" min="1" max="60" onchange="updateSettings()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" class="tab">
+    <div class="card">
+      <div class="cal-header">
+        <button class="btn" onclick="calPrev()"><i class="ti ti-chevron-left" aria-label="Предыдущий месяц"></i></button>
+        <h3 id="cal-title" style="margin:0"></h3>
+        <button class="btn" onclick="calNext()"><i class="ti ti-chevron-right" aria-label="Следующий месяц"></i></button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <div class="card" id="day-detail" style="display:none">
+      <h3 id="detail-date" style="margin:0 0 .75rem"></h3>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS TAB -->
+  <div id="tab-analytics" class="tab">
+    <div class="range-btns">
+      <button class="range-btn active" onclick="setRange(7,this)">7 дней</button>
+      <button class="range-btn" onclick="setRange(14,this)">14 дней</button>
+      <button class="range-btn" onclick="setRange(30,this)">30 дней</button>
+    </div>
+    <div class="card-grid">
+      <div class="metric"><div class="metric-val" id="a-avg-tasks">—</div><div class="metric-lbl">ср. задач/день</div></div>
+      <div class="metric"><div class="metric-val" id="a-avg-habits">—</div><div class="metric-lbl">ср. привычек/день</div></div>
+      <div class="metric"><div class="metric-val" id="a-pomos">—</div><div class="metric-lbl">помодоро всего</div></div>
+      <div class="metric"><div class="metric-val" id="a-streak">—</div><div class="metric-lbl">лучшая серия</div></div>
+    </div>
+    <div class="card">
+      <h3>Успеваемость по дням</h3>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-daily" role="img" aria-label="График успеваемости по дням"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Привычки — выполнение</h3>
+      <div id="habits-bars"></div>
+    </div>
+    <div class="card">
+      <h3>Задачи по категориям</h3>
+      <div class="chart-wrap" style="height:220px"><canvas id="chart-cats" role="img" aria-label="Круговая диаграмма задач по категориям"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const S = {
+  get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+};
+
+const todayKey = () => new Date().toISOString().slice(0,10);
+const fmtDate = (d) => new Date(d).toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+
+function getState(){
+  return S.get('daytracker_v2') || {
+    habits:[
+      {id:1,name:'Спорт 30 мин',icon:'🏃',streak:0},
+      {id:2,name:'Читать книгу',icon:'📚',streak:0},
+      {id:3,name:'Выпить 2л воды',icon:'💧',streak:0}
+    ],
+    tasks:[
+      {id:1,name:'Проверить почту',cat:'work',prio:'med',done:false},
+      {id:2,name:'Пробежка',cat:'health',prio:'high',done:false}
+    ],
+    log:{},
+    pomos:{},
+    nextHabitId:4,
+    nextTaskId:3
+  };
+}
+function saveState(st){S.set('daytracker_v2',st);}
+
+let state = getState();
+let todayLog = () => {
+  const k = todayKey();
+  if(!state.log[k]) state.log[k]={habits:{},tasks:{}};
+  return state.log[k];
+};
+
+/* ─────────────── NAV ─────────────── */
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(name==='analytics') renderAnalytics();
+  if(name==='calendar') renderCalendar();
+}
+
+/* ─────────────── DATE ─────────────── */
+document.getElementById('today-date').textContent = fmtDate(todayKey());
+
+/* ─────────────── HABITS ─────────────── */
+function renderHabits(){
+  const log = todayLog();
+  const el = document.getElementById('habits-list');
+  const done = state.habits.filter(h=>log.habits[h.id]).length;
+  document.getElementById('habits-progress').textContent = done+'/'+state.habits.length;
+  updateScore();
+  if(!state.habits.length){el.innerHTML='<p style="color:var(--muted);font-size:14px;padding:1rem 0">Нет привычек. Добавьте первую!</p>';return;}
+  el.innerHTML = state.habits.map(h=>{
+    const isDone = !!log.habits[h.id];
+    const week = getLast7(h.id);
+    const dots = week.map(d=>`<div class="dot${d?' done':''}"></div>`).join('');
+    return `<div class="habit-row">
+      <div class="habit-check${isDone?' done':''}" onclick="toggleHabit(${h.id})" title="Отметить" role="checkbox" aria-checked="${isDone}">
+        ${isDone?'<i class="ti ti-check" aria-hidden="true" style="font-size:14px"></i>':''}
+      </div>
+      <span style="font-size:18px">${h.icon}</span>
+      <span class="habit-name">${h.name}</span>
+      <span class="habit-streak" title="Серия">🔥${h.streak}</span>
+      <div class="week-dots" title="Последние 7 дней">${dots}</div>
+      <button class="btn btn-danger" onclick="deleteHabit(${h.id})" title="Удалить"><i class="ti ti-trash" aria-hidden="true" style="font-size:14px"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function getLast7(habitId){
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const k=d.toISOString().slice(0,10);
+    days.push(!!(state.log[k]&&state.log[k].habits&&state.log[k].habits[habitId]));
+  }
+  return days;
+}
+
+function toggleHabit(id){
+  const log = todayLog();
+  if(log.habits[id]){delete log.habits[id];}else{log.habits[id]=true;}
+  recalcStreaks();
+  saveState(state);
+  renderHabits();
+}
+
+function recalcStreaks(){
+  state.habits.forEach(h=>{
+    let streak=0;
+    for(let i=0;i<365;i++){
+      const d=new Date(); d.setDate(d.getDate()-i);
+      const k=d.toISOString().slice(0,10);
+      if(state.log[k]&&state.log[k].habits&&state.log[k].habits[h.id]) streak++;
+      else break;
+    }
+    h.streak=streak;
+  });
+}
+
+function addHabit(){
+  const nm=document.getElementById('new-habit').value.trim();
+  if(!nm) return;
+  const icon=document.getElementById('habit-icon').value;
+  state.habits.push({id:state.nextHabitId++,name:nm,icon,streak:0});
+  document.getElementById('new-habit').value='';
+  saveState(state); renderHabits();
+}
+
+function deleteHabit(id){
+  state.habits=state.habits.filter(h=>h.id!==id);
+  saveState(state); renderHabits();
+}
+
+/* ─────────────── TASKS ─────────────── */
+function renderTasks(){
+  const log=todayLog();
+  const el=document.getElementById('tasks-list');
+  const active=state.tasks.filter(t=>!t.done);
+  const done=state.tasks.filter(t=>t.done).length;
+  document.getElementById('tasks-progress').textContent=done+'/'+state.tasks.length;
+  updateScore();
+  if(!state.tasks.length){el.innerHTML='<p style="color:var(--muted);font-size:14px;padding:1rem 0">Нет задач. Добавьте первую!</p>';return;}
+  const sorted=[...state.tasks].sort((a,b)=>{
+    const po={high:0,med:1,low:2};
+    if(a.done!==b.done) return a.done?1:-1;
+    return po[a.prio]-po[b.prio];
+  });
+  el.innerHTML=sorted.map(t=>{
+    return `<div class="task-row">
+      <div class="task-check${t.done?' done':''}" onclick="toggleTask(${t.id})" role="checkbox" aria-checked="${t.done}">
+        ${t.done?'<i class="ti ti-check" aria-hidden="true" style="font-size:12px"></i>':''}
+      </div>
+      <div class="priority-dot p-${t.prio}" title="Приоритет: ${t.prio}"></div>
+      <span class="task-name${t.done?' done':''}">${t.name}</span>
+      <span class="tag ${t.cat}">${{work:'Работа',health:'Здоровье',personal:'Личное'}[t.cat]}</span>
+      <button class="btn btn-danger" onclick="deleteTask(${t.id})" title="Удалить"><i class="ti ti-trash" aria-hidden="true" style="font-size:13px"></i></button>
+    </div>`;
+  }).join('');
+}
+
+function toggleTask(id){
+  const t=state.tasks.find(t=>t.id===id);
+  if(t){
+    t.done=!t.done;
+    const log=todayLog();
+    if(t.done) log.tasks[id]=true; else delete log.tasks[id];
+    saveState(state); renderTasks();
+  }
+}
+
+function addTask(){
+  const nm=document.getElementById('new-task').value.trim();
+  if(!nm) return;
+  const cat=document.getElementById('task-cat').value;
+  const prio=document.getElementById('task-prio').value;
+  state.tasks.push({id:state.nextTaskId++,name:nm,cat,prio,done:false});
+  document.getElementById('new-task').value='';
+  saveState(state); renderTasks();
+}
+
+function deleteTask(id){
+  state.tasks=state.tasks.filter(t=>t.id!==id);
+  saveState(state); renderTasks();
+}
+
+/* ─────────────── SCORE ─────────────── */
+function updateScore(){
+  const log=todayLog();
+  const hTotal=state.habits.length, hDone=Object.keys(log.habits||{}).length;
+  const tTotal=state.tasks.length, tDone=Object.keys(log.tasks||{}).length;
+  const total=(hTotal+tTotal);
+  const done=(hDone+tDone);
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('score-display').textContent=pct+'%';
+}
+
+/* ─────────────── POMODORO ─────────────── */
+let pomoTimer=null, pomoMode='work', pomoRunning=false;
+let pomoRemaining=25*60, pomoTotal=25*60, pomoSessionsDone=0;
+const pomoModes={work:{label:'Фокус',color:'#4f46e5'},short:{label:'Отдых',color:'#10b981'},long:{label:'Длинный отдых',color:'#f59e0b'}};
+
+function pomoDurMin(){
+  return {work:parseInt(document.getElementById('s-work').value)||25,short:parseInt(document.getElementById('s-short').value)||5,long:parseInt(document.getElementById('s-long').value)||15}[pomoMode];
+}
+
+function setMode(m,btn){
+  if(pomoRunning) togglePomo();
+  pomoMode=m;
+  document.querySelectorAll('.mode-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  pomoReset();
+}
+
+function updateSettings(){
+  if(!pomoRunning) pomoReset();
+}
+
+function pomoReset(){
+  clearInterval(pomoTimer); pomoRunning=false;
+  pomoTotal=pomoDurMin()*60; pomoRemaining=pomoTotal;
+  renderPomoTime(); renderPomoRing();
+  document.getElementById('pomo-btn').innerHTML='<i class="ti ti-player-play"></i> Старт';
+  document.getElementById('pomo-mode-label').textContent=pomoModes[pomoMode].label;
+}
+
+function pomoPrev(){pomoReset();}
+
+function togglePomo(){
+  if(pomoRunning){
+    clearInterval(pomoTimer); pomoRunning=false;
+    document.getElementById('pomo-btn').innerHTML='<i class="ti ti-player-play"></i> Продолжить';
+  } else {
+    pomoRunning=true;
+    document.getElementById('pomo-btn').innerHTML='<i class="ti ti-player-pause"></i> Пауза';
+    pomoTimer=setInterval(()=>{
+      if(pomoRemaining<=0){
+        clearInterval(pomoTimer); pomoRunning=false;
+        if(pomoMode==='work'){
+          pomoSessionsDone++;
+          const k=todayKey();
+          if(!state.pomos[k]) state.pomos[k]=0;
+          state.pomos[k]++;
+          saveState(state);
+          document.getElementById('pomo-done-count').textContent=state.pomos[k]||0;
+        }
+        renderPomoSessions();
+        pomoReset();
+        return;
+      }
+      pomoRemaining--;
+      renderPomoTime(); renderPomoRing();
+    },1000);
+  }
+}
+
+function renderPomoTime(){
+  const m=Math.floor(pomoRemaining/60), s=pomoRemaining%60;
+  document.getElementById('pomo-time').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function renderPomoRing(){
+  const circ=2*Math.PI*90;
+  const offset=circ*(1-pomoRemaining/pomoTotal);
+  const ring=document.getElementById('pomo-ring');
+  ring.style.strokeDashoffset=circ-offset;
+  ring.style.stroke=pomoModes[pomoMode].color;
+}
+
+function renderPomoSessions(){
+  const k=todayKey(); const n=state.pomos[k]||0;
+  document.getElementById('pomo-done-count').textContent=n;
+  const slots=Math.ceil(n/4)*4||4;
+  let html='';
+  for(let i=0;i<slots;i++) html+=`<div class="sess-dot${i<n?' done':''}"></div>`;
+  document.getElementById('pomo-sessions').innerHTML=html;
+}
+
+/* ─────────────── CALENDAR ─────────────── */
+let calDate=new Date();
+const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const DAYS=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+function calPrev(){calDate.setMonth(calDate.getMonth()-1);renderCalendar();}
+function calNext(){calDate.setMonth(calDate.getMonth()+1);renderCalendar();}
+
+function renderCalendar(){
+  document.getElementById('cal-title').textContent=MONTHS[calDate.getMonth()]+' '+calDate.getFullYear();
+  const grid=document.getElementById('cal-grid');
+  let html=DAYS.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  const first=new Date(calDate.getFullYear(),calDate.getMonth(),1);
+  let dow=(first.getDay()+6)%7;
+  const daysInMonth=new Date(calDate.getFullYear(),calDate.getMonth()+1,0).getDate();
+  const prevDays=new Date(calDate.getFullYear(),calDate.getMonth(),0).getDate();
+  const todayStr=todayKey();
+  for(let i=0;i<dow;i++){
+    const d=prevDays-dow+i+1;
+    html+=`<div class="cal-day other-month"><div class="day-num">${d}</div></div>`;
+  }
+  for(let d=1;d<=daysInMonth;d++){
+    const k=new Date(calDate.getFullYear(),calDate.getMonth(),d).toISOString().slice(0,10);
+    const isToday=k===todayStr;
+    const log=state.log[k];
+    let events='';
+    if(log){
+      const hd=Object.keys(log.habits||{}).length;
+      const td=Object.keys(log.tasks||{}).length;
+      if(hd) events+=`<div class="day-dot green" title="${hd} привычек"></div>`;
+      if(td) events+=`<div class="day-dot" title="${td} задач"></div>`;
+      const pm=state.pomos[k];
+      if(pm) events+=`<div class="day-dot amber" title="${pm} помодоро"></div>`;
+    }
+    html+=`<div class="cal-day${isToday?' today':''}" onclick="showDayDetail('${k}')">
+      <div class="day-num">${d}</div>
+      <div class="day-events">${events}</div>
+    </div>`;
+  }
+  const remaining=(7-(dow+daysInMonth)%7)%7;
+  for(let i=1;i<=remaining;i++) html+=`<div class="cal-day other-month"><div class="day-num">${i}</div></div>`;
+  grid.innerHTML=html;
+}
+
+function showDayDetail(k){
+  const det=document.getElementById('day-detail');
+  const log=state.log[k];
+  document.getElementById('detail-date').textContent=fmtDate(k);
+  if(!log||(!Object.keys(log.habits||{}).length&&!Object.keys(log.tasks||{}).length&&!state.pomos[k])){
+    document.getElementById('detail-body').innerHTML='<p style="color:var(--muted);font-size:14px">Нет данных за этот день.</p>';
+  } else {
+    const hDone=Object.keys(log.habits||{}).length;
+    const tDone=Object.keys(log.tasks||{}).length;
+    const pm=state.pomos[k]||0;
+    document.getElementById('detail-body').innerHTML=`
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div><span style="font-size:22px;font-weight:500;color:var(--accent2)">${hDone}</span><p style="font-size:12px;color:var(--muted)">привычек</p></div>
+        <div><span style="font-size:22px;font-weight:500;color:var(--accent)">${tDone}</span><p style="font-size:12px;color:var(--muted)">задач</p></div>
+        <div><span style="font-size:22px;font-weight:500;color:var(--accent3)">${pm}</span><p style="font-size:12px;color:var(--muted)">помодоро</p></div>
+      </div>`;
+  }
+  det.style.display='block';
+}
+
+/* ─────────────── ANALYTICS ─────────────── */
+let chartDaily=null, chartCats=null, analyticsRange=7;
+
+function setRange(n,btn){
+  analyticsRange=n;
+  document.querySelectorAll('.range-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAnalytics();
+}
+
+function renderAnalytics(){
+  const days=[];
+  for(let i=analyticsRange-1;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  const labels=days.map(k=>{const d=new Date(k);return (d.getMonth()+1)+'/'+d.getDate();});
+  const scores=days.map(k=>{
+    const log=state.log[k];
+    if(!log) return 0;
+    const hT=state.habits.length, hD=Object.keys(log.habits||{}).length;
+    const tT=state.tasks.length, tD=Object.keys(log.tasks||{}).length;
+    const total=hT+tT; if(!total) return 0;
+    return Math.round((hD+tD)/total*100);
+  });
+  const avgTasks=days.reduce((a,k)=>a+(state.log[k]?Object.keys(state.log[k].tasks||{}).length:0),0)/analyticsRange;
+  const avgHabits=days.reduce((a,k)=>a+(state.log[k]?Object.keys(state.log[k].habits||{}).length:0),0)/analyticsRange;
+  const totalPomos=days.reduce((a,k)=>a+(state.pomos[k]||0),0);
+  document.getElementById('a-avg-tasks').textContent=avgTasks.toFixed(1);
+  document.getElementById('a-avg-habits').textContent=avgHabits.toFixed(1);
+  document.getElementById('a-pomos').textContent=totalPomos;
+  let streak=0, best=0, cur=0;
+  for(let i=0;i<analyticsRange;i++){
+    if(scores[i]>0) cur++; else cur=0;
+    if(cur>best) best=cur;
+  }
+  document.getElementById('a-streak').textContent=best+' дн';
+
+  if(chartDaily) chartDaily.destroy();
+  const ctx=document.getElementById('chart-daily').getContext('2d');
+  chartDaily=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Успех %',data:scores,backgroundColor:'rgba(79,70,229,.7)',borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false}}}
+  });
+
+  const catWork=days.reduce((a,k)=>a+(state.tasks.filter(t=>t.done&&t.cat==='work').length),0);
+  const catHealth=days.reduce((a,k)=>a+(state.tasks.filter(t=>t.done&&t.cat==='health').length),0);
+  const catPersonal=days.reduce((a,k)=>a+(state.tasks.filter(t=>t.done&&t.cat==='personal').length),0);
+  if(chartCats) chartCats.destroy();
+  const ctx2=document.getElementById('chart-cats').getContext('2d');
+  const total2=catWork+catHealth+catPersonal||1;
+  chartCats=new Chart(ctx2,{
+    type:'doughnut',
+    data:{labels:['Работа','Здоровье','Личное'],datasets:[{data:[catWork,catHealth,catPersonal],backgroundColor:['#4f46e5','#10b981','#f59e0b'],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+  document.getElementById('chart-cats').closest('.card').querySelector('.legend')?.remove();
+  const legEl=document.createElement('div'); legEl.className='legend';
+  legEl.innerHTML=[['#4f46e5','Работа',catWork],['#10b981','Здоровье',catHealth],['#f59e0b','Личное',catPersonal]].map(([c,l,v])=>
+    `<span class="legend-item"><span class="legend-sq" style="background:${c}"></span>${l} ${Math.round(v/total2*100)}%</span>`).join('');
+  document.getElementById('chart-cats').closest('.card').appendChild(legEl);
+
+  const barsEl=document.getElementById('habits-bars');
+  if(!state.habits.length){barsEl.innerHTML='<p style="color:var(--muted);font-size:14px">Нет привычек</p>';return;}
+  barsEl.innerHTML=state.habits.map(h=>{
+    const done=days.filter(k=>state.log[k]&&state.log[k].habits&&state.log[k].habits[h.id]).length;
+    const pct=Math.round(done/analyticsRange*100);
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>${h.icon} ${h.name}</span><span style="color:var(--muted)">${pct}%</span>
+      </div>
+      <div style="height:8px;border-radius:4px;background:var(--border);overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--accent2);border-radius:4px;transition:width .4s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ─────────────── INIT ─────────────── */
+renderHabits();
+renderTasks();
+pomoReset();
+renderPomoSessions();
+const k=todayKey();
+document.getElementById('pomo-done-count').textContent=state.pomos[k]||0;
+</script>
