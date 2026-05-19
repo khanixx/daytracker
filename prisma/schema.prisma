@@ -1,0 +1,91 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?
+  createdAt     DateTime  @default(now())
+  habits        Habit[]
+  tasks         Task[]
+  habitLogs     HabitLog[]
+  taskLogs      TaskLog[]
+  pomodoroLogs  PomodoroLog[]
+  settings      UserSettings?
+}
+
+model UserSettings {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workMin     Int     @default(25)
+  shortMin    Int     @default(5)
+  longMin     Int     @default(15)
+}
+
+model Habit {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  icon      String     @default("🌿")
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
+  logs      HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // YYYY-MM-DD
+  done      Boolean  @default(true)
+  
+  @@unique([habitId, date])
+}
+
+model Task {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  category  String    @default("personal") // work | health | personal
+  priority  String    @default("med")      // high | med | low
+  done      Boolean   @default(false)
+  date      String    // YYYY-MM-DD — задача принадлежит дню
+  createdAt DateTime  @default(now())
+  logs      TaskLog[]
+}
+
+model TaskLog {
+  id      String  @id @default(cuid())
+  taskId  String
+  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date    String
+  done    Boolean
+
+  @@unique([taskId, date])
+}
+
+model PomodoroLog {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date    String // YYYY-MM-DD
+  count   Int    @default(0)
+
+  @@unique([userId, date])
+}
