@@ -1,7 +1,6 @@
 "use client"
 // src/components/PomodoroTab.tsx
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useAudioSynthesizer, type Sound } from "@/hooks/useAudioSynthesizer"
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
 
@@ -12,15 +11,6 @@ const MODES: Record<Mode, { label: string; color: string; defaultMin: number }> 
   long:  { label: "Длинный отдых",  color: "#f59e0b", defaultMin: 15 },
 }
 
-const SOUNDS: { id: Sound; label: string; icon: string }[] = [
-  { id: "none",   label: "Тишина",    icon: "ti-volume-off"   },
-  { id: "rain",   label: "Дождь",     icon: "ti-cloud-rain"   },
-  { id: "ocean",  label: "Океан",     icon: "ti-wave-sine"    },
-  { id: "white",  label: "Белый шум", icon: "ti-wave-square"  },
-  { id: "forest", label: "Лес",       icon: "ti-trees"        },
-  { id: "cafe",   label: "Кафе",      icon: "ti-coffee"       },
-]
-
 export function PomodoroTab() {
   const [mode, setMode] = useState<Mode>("work")
   const [running, setRunning] = useState(false)
@@ -28,11 +18,8 @@ export function PomodoroTab() {
   const [total, setTotal] = useState(25 * 60)
   const [sessionsDone, setSessionsDone] = useState(0)
   const [settings, setSettings] = useState({ work: 25, short: 5, long: 15 })
-  const [sound, setSound] = useState<Sound>("none")
-  const [volume, setVolume] = useState(0.5)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const audio = useAudioSynthesizer()
 
   const getDuration = useCallback(
     (m: Mode, s: typeof settings) =>
@@ -76,38 +63,7 @@ export function PomodoroTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running])
 
-  // При паузе/остановке — глушим звук; при старте — возобновляем
-  useEffect(() => {
-    if (!running) {
-      audio.stop()
-    } else if (sound !== "none") {
-      audio.play(sound, volume)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running])
-
-  // Громкость обновляется без перезапуска
-  useEffect(() => {
-    audio.setVolume(volume)
-  }, [volume, audio])
-
   async function handleComplete() {
-    // Звуковой сигнал завершения
-    try {
-      const ctx = new AudioContext()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.frequency.setValueAtTime(880, ctx.currentTime)
-      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.3)
-      gain.gain.setValueAtTime(0.3, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
-      osc.start()
-      osc.stop(ctx.currentTime + 0.8)
-      setTimeout(() => ctx.close(), 1000)
-    } catch {}
-
     if (mode === "work") {
       const res = await fetch("/api/pomodoro", {
         method: "POST",
@@ -119,23 +75,12 @@ export function PomodoroTab() {
     }
   }
 
-  function handleSoundChange(newSound: Sound) {
-    setSound(newSound)
-    if (newSound === "none") {
-      audio.stop()
-    } else if (running) {
-      // Переключение звука прямо во время таймера
-      audio.play(newSound, volume)
-    }
-  }
-
   function toggle() {
     setRunning(r => !r)
   }
 
   function reset() {
     setRunning(false)
-    audio.stop()
     const dur = getDuration(mode, settings)
     setRemaining(dur)
     setTotal(dur)
@@ -236,7 +181,7 @@ export function PomodoroTab() {
         </p>
 
         {/* Settings */}
-        <div className="grid grid-cols-3 gap-2 mb-5 p-3 rounded-xl" style={{ background: "var(--bg)" }}>
+        <div className="grid grid-cols-3 gap-2 p-3 rounded-xl" style={{ background: "var(--bg)" }}>
           {(["work", "short", "long"] as const).map(k => (
             <div key={k}>
               <label className="block text-xs mb-1" style={{ color: "var(--muted)" }}>
@@ -253,43 +198,6 @@ export function PomodoroTab() {
               />
             </div>
           ))}
-        </div>
-
-        {/* Ambient sounds */}
-        <div>
-          <p className="text-xs font-semibold mb-2 text-left" style={{ color: "var(--muted)" }}>
-            🎵 Фоновые звуки
-          </p>
-          <div className="grid grid-cols-3 gap-1.5 mb-3">
-            {SOUNDS.map(snd => (
-              <button
-                key={snd.id}
-                onClick={() => handleSoundChange(snd.id)}
-                className="flex flex-col items-center gap-1 p-2 rounded-xl border text-xs font-semibold transition-all"
-                style={{
-                  borderColor: sound === snd.id ? modeColor : "var(--border)",
-                  background:  sound === snd.id ? `${modeColor}18` : "var(--bg)",
-                  color:       sound === snd.id ? modeColor : "var(--muted)",
-                }}
-              >
-                <i className={`ti ${snd.icon} text-base`} />
-                {snd.label}
-              </button>
-            ))}
-          </div>
-
-          {sound !== "none" && (
-            <div className="flex items-center gap-3">
-              <i className="ti ti-volume text-sm" style={{ color: "var(--muted)" }} />
-              <input
-                type="range" min={0} max={1} step={0.05}
-                value={volume}
-                onChange={e => setVolume(parseFloat(e.target.value))}
-                className="flex-1 accent-indigo-500"
-              />
-              <i className="ti ti-volume-3 text-sm" style={{ color: "var(--muted)" }} />
-            </div>
-          )}
         </div>
       </div>
     </div>
