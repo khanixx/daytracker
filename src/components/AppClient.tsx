@@ -1,6 +1,6 @@
 "use client"
 // src/components/AppClient.tsx
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { HabitsTab }         from "./HabitsTab"
 import { TasksTab }          from "./TasksTab"
 import { PomodoroTab }       from "./PomodoroTab"
@@ -45,6 +45,18 @@ export function AppClient({ user }: { user: UserData }) {
   const [profile, setProfile]         = useState(user)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [chatBadge, setChatBadge]     = useState(0)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Закрываем меню при клике снаружи
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    if (menuOpen) document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [menuOpen])
 
   // Считаем непрочитанные сообщения
   const checkUnread = useCallback(async () => {
@@ -120,7 +132,7 @@ export function AppClient({ user }: { user: UserData }) {
             <ThemeToggle />
 
             {/* User menu */}
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm"
@@ -272,7 +284,6 @@ export function AppClient({ user }: { user: UserData }) {
         </button>
       </nav>
 
-      {menuOpen && <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />}
     </div>
   )
 }
