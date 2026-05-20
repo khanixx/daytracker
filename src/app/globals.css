@@ -189,13 +189,17 @@
   /* ── Мобильный нижний nav ────────────────────────────── */
   .nav-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
 
+  /* Скрыть мобильный nav на десктопе */
+  .mobile-nav {
+    display: none;
+  }
+
   @media (max-width: 640px) {
     .mobile-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      /* safe-area для iPhone */
       padding-bottom: env(safe-area-inset-bottom, 0px);
       background: var(--glass-bg);
       border-top: 1px solid var(--border);

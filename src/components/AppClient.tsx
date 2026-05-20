@@ -129,7 +129,7 @@ export function AppClient({ user }: { user: UserData }) {
               </button>
 
               {menuOpen && (
-                <div className="absolute right-0 top-11 w-56 rounded-2xl overflow-hidden z-50 animate-fade-in"
+                <div className="absolute right-0 top-11 w-56 rounded-2xl overflow-hidden z-[60] animate-fade-in"
                   style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}>
                   <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                     <p className="text-sm font-bold truncate" style={{ color: "var(--text)" }}>{profile.name}</p>
@@ -158,6 +158,30 @@ export function AppClient({ user }: { user: UserData }) {
             </div>
           </div>
         </div>
+
+        {/* Desktop section tabs — hidden on mobile */}
+        <nav className="hidden sm:flex max-w-2xl mx-auto px-4 gap-1 border-b" style={{ borderColor: "var(--border)" }}>
+          {([
+            { id: "productivity", icon: "ti-layout-dashboard", label: "Продуктивность" },
+            { id: "social",       icon: "ti-users",            label: "Люди"           },
+            { id: "chat",         icon: "ti-message-circle",   label: "Чат"            },
+          ] as const).map(s => (
+            <button key={s.id} onClick={() => setSection(s.id)}
+              className="relative flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-all duration-200"
+              style={{
+                borderColor: section === s.id ? "var(--accent)" : "transparent",
+                color:       section === s.id ? "var(--accent)" : "var(--muted)",
+                background:  "transparent",
+              }}>
+              <i className={`ti ${s.icon} text-sm`} />
+              {s.label}
+              {s.id === "chat" && chatBadge > 0 && (
+                <span className="w-3.5 h-3.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center ml-1"
+                  style={{ background: "var(--red)" }}>{chatBadge}</span>
+              )}
+            </button>
+          ))}
+        </nav>
 
         {/* Sub-tabs when in productivity */}
         {section === "productivity" && (
