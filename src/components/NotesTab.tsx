@@ -118,272 +118,201 @@ export function NotesTab() {
     if (selected?.id === id) setSelected(null)
   }
 
+
   // Все уникальные теги для фильтра
   const allTags = Array.from(new Set(notes.flatMap(n => n.tags)))
 
+  // ── Боковая панель (список) — переиспользуется на десктопе ──
+  const SidebarContent = (
+    <div className="flex flex-col h-full">
+      <div className="p-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
+        <button onClick={createNote} className="btn btn-primary w-full mb-2 text-xs">
+          <i className="ti ti-plus text-sm" /> Новая заметка
+        </button>
+        <div className="relative">
+          <i className="ti ti-search absolute left-2.5 top-1/2 -translate-y-1/2 text-sm"
+            style={{ color: "var(--muted)" }} />
+          <input
+            className="input text-xs pl-7"
+            placeholder="Поиск..."
+            value={q}
+            onChange={e => setQ(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {allTags.length > 0 && (
+        <div className="px-3 py-2 flex gap-1 flex-wrap border-b" style={{ borderColor: "var(--border)" }}>
+          {allTags.map(t => (
+            <button key={t} onClick={() => setFilterTag(t === filterTag ? null : t)}
+              className="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
+              style={{
+                background: filterTag === t ? tagColor(t) : `${tagColor(t)}22`,
+                color: filterTag === t ? "#fff" : tagColor(t),
+              }}>
+              #{t}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="p-3 flex flex-col gap-2">
+            {[1,2,3].map(i => <div key={i} className="skeleton h-16 rounded-xl" />)}
+          </div>
+        ) : notes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-40 gap-2" style={{ color: "var(--muted)" }}>
+            <i className="ti ti-notes-off text-3xl opacity-30" />
+            <p className="text-xs">Нет заметок</p>
+          </div>
+        ) : notes.map(n => (
+          <button key={n.id}
+            onClick={() => { setSelected(n); setShowEditor(true) }}
+            className="w-full flex flex-col px-3 py-2.5 border-b text-left transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              background: selected?.id === n.id ? "var(--surface2)" : "transparent",
+            }}>
+            <div className="flex items-center justify-between gap-2 w-full">
+              <p className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                {n.title || "Без названия"}
+              </p>
+              <span className="text-[10px] shrink-0" style={{ color: "var(--muted)" }}>
+                {fmtDate(n.updatedAt)}
+              </span>
+            </div>
+            <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--muted)" }}>
+              {n.content || "Пусто"}
+            </p>
+            {n.tags.length > 0 && (
+              <div className="flex gap-1 mt-1 flex-wrap">
+                {n.tags.map(t => (
+                  <span key={t} className="px-1.5 py-0 rounded-full text-[9px] font-semibold"
+                    style={{ background: `${tagColor(t)}22`, color: tagColor(t) }}>
+                    #{t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  // ── Редактор — переиспользуется на десктопе и мобиле ──
+  const EditorContent = selected ? (
+    <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
+        {/* Кнопка назад — только на мобиле */}
+        <button
+          className="sm:hidden btn w-8 h-8 rounded-full p-0 shrink-0"
+          onClick={() => setShowEditor(false)}>
+          <i className="ti ti-arrow-left text-base" />
+        </button>
+        <p className="flex-1 text-xs font-semibold truncate" style={{ color: "var(--muted)" }}>
+          {fmtDate(selected.updatedAt)}
+        </p>
+        {saving && (
+          <span className="text-[11px]" style={{ color: "var(--muted)" }}>
+            <i className="ti ti-loader animate-spin" /> Сохранение...
+          </span>
+        )}
+        <button
+          onClick={() => { deleteNote(selected.id); setShowEditor(false) }}
+          className="btn btn-danger text-xs px-2 py-1">
+          <i className="ti ti-trash text-sm" />
+        </button>
+      </div>
+
+      <input
+        className="px-4 pt-4 pb-1 text-xl font-bold outline-none bg-transparent w-full shrink-0"
+        style={{ color: "var(--text)", border: "none" }}
+        placeholder="Заголовок..."
+        value={selected.title}
+        onChange={e => updateField("title", e.target.value)}
+      />
+
+      <p className="px-4 text-xs pb-2 shrink-0" style={{ color: "var(--muted)" }}>
+        {fmtDate(selected.updatedAt)}
+      </p>
+
+      <textarea
+        ref={editorRef}
+        className="flex-1 px-4 pb-4 outline-none resize-none bg-transparent text-sm leading-relaxed"
+        style={{ color: "var(--text)", border: "none", fontFamily: "inherit" }}
+        placeholder="Начните писать..."
+        value={selected.content}
+        onChange={e => updateField("content", e.target.value)}
+      />
+
+      {/* Теги */}
+      <div className="px-4 py-3 border-t shrink-0" style={{ borderColor: "var(--border)" }}>
+        <div className="flex gap-1.5 flex-wrap items-center">
+          {selected.tags.map(t => (
+            <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+              style={{ background: `${tagColor(t)}22`, color: tagColor(t) }}>
+              #{t}
+              <button onClick={() => removeTag(t)} className="opacity-60 hover:opacity-100">×</button>
+            </span>
+          ))}
+          {showTagInput ? (
+            <input
+              className="input text-xs px-2 py-1 w-28"
+              placeholder="тег..."
+              value={newTagInput}
+              autoFocus
+              onChange={e => setNewTagInput(e.target.value.toLowerCase().replace(/\s/g, ""))}
+              onKeyDown={e => { if (e.key === "Enter") addTag(); if (e.key === "Escape") setShowTagInput(false) }}
+              onBlur={() => { addTag(); setShowTagInput(false) }}
+            />
+          ) : (
+            <button onClick={() => setShowTagInput(true)}
+              className="px-2 py-0.5 rounded-full text-[11px] font-semibold transition-all"
+              style={{ background: "var(--surface2)", color: "var(--muted)" }}>
+              + тег
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="flex-1 flex flex-col items-center justify-center gap-3" style={{ color: "var(--muted)" }}>
+      <i className="ti ti-notebook text-5xl opacity-30" />
+      <p className="text-sm font-medium">Выберите или создайте заметку</p>
+      <button onClick={createNote} className="btn btn-primary text-xs">
+        <i className="ti ti-plus" /> Создать
+      </button>
+    </div>
+  )
+
   return (
     <div className="rounded-2xl overflow-hidden"
-      style={{ border: "1px solid var(--border)", background: "var(--surface)", height: "calc(100dvh - 130px)", display: "flex", flexDirection: "column" }}>
+      style={{
+        border: "1px solid var(--border)",
+        background: "var(--surface)",
+        height: "calc(100dvh - 130px)",
+        display: "flex",
+        flexDirection: "column",
+      }}>
 
       {/* ── Десктоп: две колонки ── */}
       <div className="hidden sm:flex h-full">
-      <aside className="w-64 shrink-0 flex flex-col border-r" style={{ borderColor: "var(--border)" }}>
-        {/* Поиск + кнопка создания */}
-        <div className="p-3 border-b" style={{ borderColor: "var(--border)" }}>
-          <button
-            onClick={createNote}
-            className="btn btn-primary w-full mb-2 text-xs"
-          >
-            <i className="ti ti-plus text-sm" /> Новая заметка
-          </button>
-          <div className="relative">
-            <i className="ti ti-search absolute left-2.5 top-1/2 -translate-y-1/2 text-sm"
-              style={{ color: "var(--muted)" }} />
-            <input
-              className="input text-xs pl-7"
-              placeholder="Поиск..."
-              value={q}
-              onChange={e => setQ(e.target.value)}
-            />
-          </div>
+        <aside className="w-64 shrink-0 border-r h-full overflow-hidden"
+          style={{ borderColor: "var(--border)" }}>
+          {SidebarContent}
+        </aside>
+        <div className="flex-1 h-full overflow-hidden flex flex-col">
+          {EditorContent}
         </div>
-
-        {/* Фильтр по тегам */}
-        {allTags.length > 0 && (
-          <div className="px-3 py-2 flex gap-1 flex-wrap border-b" style={{ borderColor: "var(--border)" }}>
-            <button
-              onClick={() => setFilterTag(null)}
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all"
-              style={{
-                background: !filterTag ? "var(--accent)" : "transparent",
-                color: !filterTag ? "#fff" : "var(--muted)",
-                borderColor: !filterTag ? "var(--accent)" : "var(--border)",
-              }}
-            >
-              Все
-            </button>
-            {allTags.map(tag => (
-              <button
-                key={tag}
-                onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all"
-                style={{
-                  background: filterTag === tag ? tagColor(tag) : "transparent",
-                  color: filterTag === tag ? "#fff" : "var(--muted)",
-                  borderColor: filterTag === tag ? tagColor(tag) : "var(--border)",
-                }}
-              >
-                #{tag}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Список заметок */}
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-20 text-xs" style={{ color: "var(--muted)" }}>
-              Загрузка...
-            </div>
-          ) : notes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 gap-2 text-xs" style={{ color: "var(--muted)" }}>
-              <i className="ti ti-notebook text-2xl" />
-              Заметок нет
-            </div>
-          ) : (
-            notes.map(note => (
-              <button
-                key={note.id}
-                onClick={() => setSelected(note)}
-                className="w-full text-left px-3 py-2.5 border-b transition-colors"
-                style={{
-                  borderColor: "var(--border)",
-                  background: selected?.id === note.id ? "var(--surface2)" : "transparent",
-                }}
-              >
-                <p className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
-                  {note.title || "Без названия"}
-                </p>
-                <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--muted)" }}>
-                  {note.content ? note.content.slice(0, 60) : "Пусто"}
-                </p>
-                <p className="text-[10px] mt-1" style={{ color: "var(--muted)" }}>
-                  {fmtDate(note.updatedAt)}
-                </p>
-              </button>
-            ))
-          )}
-        </div>
-      </aside>
-
-      {/* ── РЕДАКТОР десктоп ── */}
-      {selected ? (
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Toolbar */}
-          <div className="flex items-center justify-between px-4 py-2 border-b shrink-0"
-            style={{ borderColor: "var(--border)" }}>
-            <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-              {/* Теги */}
-              {selected.tags.map(tag => (
-                <span
-                  key={tag}
-                  className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: `${tagColor(tag)}20`, color: tagColor(tag) }}
-                >
-                  #{tag}
-                  <button onClick={() => removeTag(tag)} className="hover:opacity-70">×</button>
-                </span>
-              ))}
-              {showTagInput ? (
-                <input
-                  autoFocus
-                  className="text-xs border rounded-full px-2 py-0.5 outline-none w-24"
-                  style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}
-                  placeholder="тег..."
-                  value={newTagInput}
-                  onChange={e => setNewTagInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") addTag(); if (e.key === "Escape") setShowTagInput(false) }}
-                  onBlur={() => { if (!newTagInput) setShowTagInput(false) }}
-                />
-              ) : (
-                <button
-                  onClick={() => setShowTagInput(true)}
-                  className="text-[11px] px-2 py-0.5 rounded-full border transition-all hover:opacity-80"
-                  style={{ borderColor: "var(--border)", color: "var(--muted)" }}
-                >
-                  + тег
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {saving && (
-                <span className="text-[11px]" style={{ color: "var(--muted)" }}>
-                  <i className="ti ti-loader animate-spin" /> Сохранение...
-                </span>
-              )}
-              <button
-                onClick={() => deleteNote(selected.id)}
-                className="btn btn-danger text-xs px-2 py-1"
-              >
-                <i className="ti ti-trash text-sm" />
-              </button>
-            </div>
-          </div>
-
-          {/* Заголовок */}
-          <input
-            className="px-4 pt-4 pb-1 text-xl font-bold outline-none bg-transparent w-full"
-            style={{ color: "var(--text)", border: "none" }}
-            placeholder="Заголовок..."
-            value={selected.title}
-            onChange={e => updateField("title", e.target.value)}
-          />
-
-          <p className="px-4 text-xs pb-2" style={{ color: "var(--muted)" }}>
-            {fmtDate(selected.updatedAt)}
-          </p>
-
-          {/* Контент */}
-          <textarea
-            ref={editorRef}
-            className="flex-1 px-4 pb-4 outline-none resize-none bg-transparent text-sm leading-relaxed"
-            style={{ color: "var(--text)", border: "none", fontFamily: "inherit" }}
-            placeholder="Начните писать..."
-            value={selected.content}
-            onChange={e => updateField("content", e.target.value)}
-          />
-        </div>
-      ) : (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3"
-          style={{ color: "var(--muted)" }}>
-          <i className="ti ti-notebook text-5xl opacity-30" />
-          <p className="text-sm font-medium">Выберите или создайте заметку</p>
-          <button onClick={createNote} className="btn btn-primary text-xs">
-            <i className="ti ti-plus" /> Создать
-          </button>
-        </div>
-      )}
-    </div>
-      </div>{/* /desktop */}
-
-      {/* ── Мобиле: один экран ── */}
-      <div className="flex sm:hidden flex-col h-full">
-        {!showEditor ? (
-          // Список заметок на мобиле
-          <div className="flex flex-col h-full">
-            <div className="p-3 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
-              <button onClick={createNote} className="btn btn-primary w-full mb-2 text-xs">
-                <i className="ti ti-plus text-sm" /> Новая заметка
-              </button>
-              <div className="relative">
-                <i className="ti ti-search absolute left-2.5 top-1/2 -translate-y-1/2 text-sm"
-                  style={{ color: "var(--muted)" }} />
-                <input
-                  className="input text-xs pl-7"
-                  placeholder="Поиск..."
-                  value={q}
-                  onChange={e => setQ(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {loading ? (
-                <div className="p-3 flex flex-col gap-2">
-                  {[1,2,3].map(i => <div key={i} className="skeleton h-16 rounded-xl" />)}
-                </div>
-              ) : notes.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 gap-2" style={{ color: "var(--muted)" }}>
-                  <i className="ti ti-notes-off text-3xl opacity-30" />
-                  <p className="text-xs">Нет заметок</p>
-                </div>
-              ) : notes.map(n => (
-                <button key={n.id}
-                  onClick={() => { setSelected(n); setShowEditor(true) }}
-                  className="w-full flex flex-col px-4 py-3 border-b text-left transition-colors"
-                  style={{ borderColor: "var(--border)", background: selected?.id === n.id ? "var(--surface2)" : "transparent" }}>
-                  <p className="text-sm font-semibold truncate" style={{ color: "var(--text)" }}>
-                    {n.title || "Без названия"}
-                  </p>
-                  <p className="text-xs truncate mt-0.5" style={{ color: "var(--muted)" }}>
-                    {n.content || "Пусто"}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : selected ? (
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0" style={{ borderColor: "var(--border)" }}>
-              <button onClick={() => setShowEditor(false)} className="btn w-8 h-8 rounded-full p-0 shrink-0">
-                <i className="ti ti-arrow-left text-base" />
-              </button>
-              <p className="flex-1 text-sm font-bold truncate" style={{ color: "var(--text)" }}>
-                {selected.title || "Без названия"}
-              </p>
-              {saving && <i className="ti ti-loader animate-spin text-xs" style={{ color: "var(--muted)" }} />}
-              <button onClick={() => { deleteNote(selected.id); setShowEditor(false) }} className="btn btn-danger text-xs px-2 py-1">
-                <i className="ti ti-trash text-sm" />
-              </button>
-            </div>
-            <input
-              className="px-4 pt-3 pb-1 text-lg font-bold outline-none bg-transparent w-full shrink-0"
-              style={{ color: "var(--text)", border: "none" }}
-              placeholder="Заголовок..."
-              value={selected.title}
-              onChange={e => updateField("title", e.target.value)}
-            />
-            <textarea
-              ref={editorRef}
-              className="flex-1 px-4 pb-4 outline-none resize-none bg-transparent text-sm leading-relaxed"
-              style={{ color: "var(--text)", border: "none", fontFamily: "inherit" }}
-              placeholder="Начните писать..."
-              value={selected.content}
-              onChange={e => updateField("content", e.target.value)}
-            />
-          </div>
-        ) : null}
       </div>
+
+      {/* ── Мобиле: одна панель ── */}
+      <div className="flex sm:hidden flex-col h-full overflow-hidden">
+        {!showEditor ? SidebarContent : EditorContent}
+      </div>
+
     </div>
   )
 }
