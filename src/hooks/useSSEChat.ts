@@ -1,5 +1,4 @@
 // src/hooks/useSSEChat.ts
-// Хук подключается к SSE-стриму и возвращает живые сообщения
 "use client"
 import { useState, useEffect, useRef, useCallback } from "react"
 
@@ -15,67 +14,81 @@ export interface ChatMessage {
 export function useSSEChat(convId: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [connected, setConnected] = useState(false)
-  const esRef     = useRef<EventSource | null>(null)
-  const lastIdRef = useRef<string>("")
+  const esRef       = useRef<EventSource | null>(null)
+  const lastIdRef   = useRef<string>("")
+  const reconnTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mountedRef  = useRef(true)
 
-  // Первичная загрузка истории (REST)
   const loadHistory = useCallback(async (id: string) => {
     const res = await fetch(`/api/conversations/${id}/messages`)
     const data: ChatMessage[] = await res.json()
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data) && data.length > 0 && mountedRef.current) {
       setMessages(data)
       lastIdRef.current = data[data.length - 1].id
     }
   }, [])
 
-  // Подключаем SSE
+  const connect = useCallback((id: string) => {
+    if (!mountedRef.current) return
+    esRef.current?.close()
+    esRef.current = null
+
+    const url = `/api/conversations/${id}/stream?lastId=${encodeURIComponent(lastIdRef.current)}`
+    const es = new EventSource(url)
+    esRef.current = es
+
+    es.onopen = () => {
+      if (mountedRef.current) setConnected(true)
+    }
+
+    es.onmessage = (e) => {
+      if (!mountedRef.current) return
+      try {
+        const msg: ChatMessage = JSON.parse(e.data)
+        lastIdRef.current = msg.id
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          return [...prev, msg]
+        })
+      } catch {}
+    }
+
+    es.onerror = () => {
+      if (!mountedRef.current) return
+      setConnected(false)
+      es.close()
+      esRef.current = null
+      // Реконнект через 2 сек
+      reconnTimer.current = setTimeout(() => {
+        if (mountedRef.current) connect(id)
+      }, 2000)
+    }
+  }, [])
+
   useEffect(() => {
-    if (!convId) { setMessages([]); setConnected(false); return }
+    mountedRef.current = true
+    if (!convId) {
+      setMessages([])
+      setConnected(false)
+      return
+    }
 
     setMessages([])
     lastIdRef.current = ""
     setConnected(false)
 
     loadHistory(convId).then(() => {
-      // После загрузки истории подключаемся к стриму для новых сообщений
-      const url = `/api/conversations/${convId}/stream?lastId=${encodeURIComponent(lastIdRef.current)}`
-      const es  = new EventSource(url)
-      esRef.current = es
-
-      es.onopen = () => setConnected(true)
-
-      es.onmessage = (e) => {
-        try {
-          const msg: ChatMessage = JSON.parse(e.data)
-          lastIdRef.current = msg.id
-          setMessages(prev => {
-            // Не добавляем дубли
-            if (prev.some(m => m.id === msg.id)) return prev
-            return [...prev, msg]
-          })
-        } catch {}
-      }
-
-      es.onerror = () => {
-        setConnected(false)
-        es.close()
-        // Реконнект через 2 сек
-        setTimeout(() => {
-          if (esRef.current === es) {
-            esRef.current = null
-            // Триггерим ре-эффект через смену ключа — в ChatTab
-          }
-        }, 2000)
-      }
+      if (mountedRef.current) connect(convId)
     })
 
     return () => {
+      mountedRef.current = false
       esRef.current?.close()
       esRef.current = null
+      if (reconnTimer.current) clearTimeout(reconnTimer.current)
     }
-  }, [convId, loadHistory])
+  }, [convId, loadHistory, connect])
 
-  // Добавить оптимистично отправленное сообщение
   const addOptimistic = useCallback((msg: ChatMessage) => {
     setMessages(prev => {
       if (prev.some(m => m.id === msg.id)) return prev
