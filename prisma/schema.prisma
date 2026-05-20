@@ -14,7 +14,13 @@ model User {
   name          String?
   email         String        @unique
   password      String?
+  // ── Социальные поля ──────────────────────────────────
+  handle        String?       @unique  // уникальный @тег, напр. "john_doe"
+  bio           String?
+  avatarColor   String        @default("#6366f1")
+  isPublic      Boolean       @default(true)
   createdAt     DateTime      @default(now())
+  // ── Связи ────────────────────────────────────────────
   habits        Habit[]
   tasks         Task[]
   habitLogs     HabitLog[]
@@ -22,6 +28,10 @@ model User {
   pomodoroLogs  PomodoroLog[]
   settings      UserSettings?
   notes         Note[]
+  // Чат
+  conversationsA Conversation[] @relation("ConvUserA")
+  conversationsB Conversation[] @relation("ConvUserB")
+  sentMessages   Message[]      @relation("MessageSender")
 }
 
 model UserSettings {
@@ -50,7 +60,7 @@ model HabitLog {
   habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      String   // YYYY-MM-DD
+  date      String
   done      Boolean  @default(true)
 
   @@unique([habitId, date])
@@ -100,4 +110,29 @@ model Note {
   tags      String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ── Личные переписки (1-to-1) ─────────────────────────────
+model Conversation {
+  id        String    @id @default(cuid())
+  userAId   String
+  userBId   String
+  userA     User      @relation("ConvUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB     User      @relation("ConvUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+
+  // Пара уникальна независимо от порядка (решается на уровне API)
+  @@unique([userAId, userBId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  text           String
+  createdAt      DateTime     @default(now())
+  readAt         DateTime?
 }
